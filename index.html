@@ -11,12 +11,12 @@
 <style>
 :root{
   --bg:#0a0e13; --panel:#10161e; --panel2:#151d27; --line:#1f2a37; --text:#e6edf3; --muted:#8b98a8;
-  --acc:#a78bfa; --acc2:#f59e0b; --ok:#34d399; --bad:#f87171; --key:#64748b;
+  --acc:#a78bfa; --acc2:#f59e0b; --acc3:#ec4899; --ok:#34d399; --bad:#f87171; --key:#64748b;
   --shadow:0 10px 30px rgba(0,0,0,.35);
 }
 [data-theme="light"]{
   --bg:#eef2f6; --panel:#ffffff; --panel2:#f5f8fb; --line:#d8e0e8; --text:#0f1720; --muted:#5b6878;
-  --acc:#7c3aed; --acc2:#d97706; --key:#94a3b8; --shadow:0 8px 24px rgba(15,23,32,.08);
+  --acc:#7c3aed; --acc2:#d97706; --acc3:#db2777; --key:#94a3b8; --shadow:0 8px 24px rgba(15,23,32,.08);
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
@@ -86,6 +86,22 @@ canvas{display:block;width:100%;height:100%}
 .msg.err{background:color-mix(in srgb,var(--bad) 14%,transparent);border:1px solid var(--bad)}
 .steps{margin:0;padding-left:20px;line-height:1.7;font-size:14px}
 .disabled{opacity:.45;pointer-events:none}
+.dot.p{background:var(--acc3)}
+.seg2{display:inline-flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--panel2)}
+.seg2 button{font:600 14px Inter,sans-serif;border:0;background:transparent;color:var(--text);padding:10px 14px;cursor:pointer}
+.seg2 button.on{background:var(--acc3);color:#fff}
+.seg2 button:disabled{opacity:.4;cursor:not-allowed}
+#vdrop{border:2px dashed var(--line);border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:.15s}
+#vdrop.over,#vdrop:hover{border-color:var(--acc3);background:color-mix(in srgb,var(--acc3) 6%,transparent)}
+#vdrop small{display:block;color:var(--muted);margin-top:4px}
+.slider{display:flex;align-items:center;gap:10px;margin:10px 0}
+.slider label{width:118px;color:var(--muted);font-size:14px}
+.slider input[type=range]{flex:1;accent-color:var(--acc3)}
+.slider b{font:600 14px "JetBrains Mono",monospace;width:52px;text-align:right}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;margin:8px 0;cursor:pointer}
+.chk input{accent-color:var(--acc3);width:18px;height:18px}
+.vbar{position:relative;height:12px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);margin-top:6px;overflow:hidden;display:none}
+.vbar i{position:absolute;top:0;bottom:0;background:var(--acc3)}
 .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
 </style>
@@ -197,6 +213,43 @@ canvas{display:block;width:100%;height:100%}
       </div>
     </section>
 
+    <section class="tile span12" id="voiceTile">
+      <h2><span class="dot p"></span>Stimme / Ton hinzufügen</h2>
+      <div class="grid" style="gap:18px">
+        <div class="span4">
+          <div id="vdrop">
+            <b>🎤 MP3 hierher ziehen oder antippen</b>
+            <small>Deine Sprachaufnahme (auch WAV/M4A)</small>
+            <input type="file" id="vIn" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden>
+          </div>
+          <div class="kv" style="margin-top:12px">
+            <span>Datei</span><span id="vName">–</span>
+            <span>Länge</span><span id="vDur">–</span>
+          </div>
+          <button class="btn small" id="vRemove" style="margin-top:10px" disabled>✕ Stimme entfernen</button>
+        </div>
+        <div class="span4" id="vMid">
+          <div class="seg2" id="vMode">
+            <button data-m="replace" class="on">Stimme ersetzt Ton</button>
+            <button data-m="mix">Stimme + Originalton</button>
+          </div>
+          <div class="field" style="margin-top:14px"><label>Stimme ab</label>
+            <button class="nudge" data-v="-0.1">−</button>
+            <input id="vOff" class="mono" value="0:00.0">
+            <button class="nudge" data-v="0.1">+</button>
+          </div>
+          <p class="hint" id="vModeHint"></p>
+        </div>
+        <div class="span4" id="vMix">
+          <div class="slider"><label>Originalton</label><input type="range" id="vOrig" min="0" max="150" value="60"><b id="vOrigTxt">60 %</b></div>
+          <div class="slider"><label>Stimme</label><input type="range" id="vVol" min="0" max="200" value="100"><b id="vVolTxt">100 %</b></div>
+          <label class="chk"><input type="checkbox" id="vDuck" checked> Musik leiser, während ich spreche</label>
+          <div class="slider"><label>Dann noch</label><input type="range" id="vDuckLvl" min="0" max="100" value="30"><b id="vDuckTxt">30 %</b></div>
+        </div>
+      </div>
+      <div class="msg" id="vMsg"></div>
+    </section>
+
     <section class="tile span8">
       <h2><span class="dot"></span>Ergebnis</h2>
       <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
@@ -204,6 +257,7 @@ canvas{display:block;width:100%;height:100%}
         <div class="delta" id="resDelta"></div>
       </div>
       <div class="segs" id="segs"></div>
+      <div class="vbar" id="vbar"><i id="vbarI"></i></div>
       <div class="bar"><i id="resBar"></i></div>
       <div class="controls" style="margin-top:0">
         <button class="btn primary" id="playRes" disabled>▶ Ergebnis ansehen</button>
@@ -219,9 +273,10 @@ canvas{display:block;width:100%;height:100%}
         <li>Video laden</li>
         <li><b>Kürzen:</b> Anfang/Ende setzen</li>
         <li><b>Verlängern:</b> Teil wählen und wiederholen</li>
+        <li><b>Stimme:</b> MP3 dazu, Startzeit setzen</li>
         <li>Ansehen und exportieren</li>
       </ol>
-      <p class="hint">Das Video wird <b>ohne Neu-Kodierung</b> geschnitten – Bild und Ton bleiben 1:1 in Originalqualität, der Export dauert nur Sekunden. Alles läuft nur auf deinem Gerät, nichts wird hochgeladen.</p>
+      <p class="hint">Das Video wird <b>ohne Neu-Kodierung</b> geschnitten – das Bild bleibt 1:1 in Originalqualität, der Export dauert nur Sekunden. Nur beim Mischen von Stimme und Originalton wird der Ton neu erstellt. Alles läuft nur auf deinem Gerät, nichts wird hochgeladen.</p>
     </section>
   </div>
 </div>
@@ -437,7 +492,7 @@ function buildStbl(M, t, list, chunks, use64){
   for(let i=0;i<n;i++){ durs[i] = t.dur[list[i]]; ctos[i] = t.cto[list[i]]; }
   const sttsR = rle(durs, n);
   const stts = full(0, 0, 4 + sttsR.length*8); { const dv = new DataView(stts.buffer); dv.setUint32(4, sttsR.length); sttsR.forEach(([c,d],i) => { dv.setUint32(8+i*8, c); dv.setUint32(12+i*8, d); }); }
-  const parts = [u.subarray(t.stsd.start, t.stsd.end), box("stts", stts)];
+  const parts = [t.stsdBytes || u.subarray(t.stsd.start, t.stsd.end), box("stts", stts)];
   if(t.hasCtts){
     const r = rle(ctos, n), neg = ctos.some(x => x < 0);
     const b = full(neg ? 1 : 0, 0, 4 + r.length*8), dv = new DataView(b.buffer);
@@ -462,16 +517,23 @@ function buildStbl(M, t, list, chunks, use64){
   return box("stbl", ...parts);
 }
 
-/* Neue Datei bauen -> { parts:[Uint8Array | {off,len}], size } */
-function build(M, segs){
+/* Neue Datei bauen -> { parts:[Uint8Array | {off,len}], size }
+   opts.ext: eigene Tonspur (ersetzt den Originalton)  ·  opts.audioOnly: nur Originalton (zum Dekodieren) */
+function build(M, segs, opts){
+  opts = opts || {};
   const P = plan(M, segs).filter(p => p.v[1] > p.v[0]);
   const u = M.moov;
-  const tracks = [M.video, ...M.audios];
-  const lists = tracks.map(() => []);
+  const tracks = [], lists = [];
+  if(!opts.audioOnly){ tracks.push(M.video); lists.push([]); }
+  const srcAud = opts.ext ? [] : opts.audioOnly ? M.audios.slice(0, 1) : M.audios;
+  srcAud.forEach(a => { tracks.push(a); lists.push([]); });
   for(const p of P){
-    for(let i=p.v[0]; i<p.v[1]; i++) lists[0].push(i);
-    p.aud.forEach(([a,b], k) => { for(let j=a;j<b;j++) lists[k+1].push(j); });
+    if(!opts.audioOnly) for(let i=p.v[0]; i<p.v[1]; i++) lists[0].push(i);
+    const base = opts.audioOnly ? 0 : 1;
+    srcAud.forEach((a, k) => { const [x,y] = p.aud[k]; for(let j=x;j<y;j++) lists[base+k].push(j); });
   }
+  if(opts.ext){ tracks.push(opts.ext); lists.push(Array.from({ length: opts.ext.n }, (_, i) => i)); }
+  if(!tracks.length) throw new Error("keine Spur");
   // Chunks (~0,5 s) bilden
   const allChunks = [];
   const trackChunks = tracks.map((t, ti) => {
@@ -490,43 +552,53 @@ function build(M, segs){
   let dataLen = 0; for(const c of allChunks) dataLen += c.bytes;
   const big = dataLen + 16 > 0xFFFFFFFF;
   const mdatHdr = big ? 16 : 8;
-  // Dauern
-  const durOf = ti => { let d = 0; const t = tracks[ti]; for(const s of lists[ti]) d += t.dur[s]; return d; };
-  const mediaDur = tracks.map((_, ti) => durOf(ti));
-  const vt = M.video;
-  const movieDurs = tracks.map((t, ti) => {
-    return Math.round(mediaDur[ti] * M.movieTs / t.timescale);
-  });
+  const mediaDur = tracks.map((t, ti) => { let d = 0; for(const s of lists[ti]) d += t.dur[s]; return d; });
+  const movieDurs = tracks.map((t, ti) => Math.round(mediaDur[ti] * M.movieTs / t.timescale));
   const movieDur = Math.max(...movieDurs);
   const ftyp = M.ftyp || new Uint8Array(0);
+  // Spur-Nummern
+  let maxId = 0; for(const t of M.traks){ const tb = t.tkhd.body; const id = u32(u, tb + (u[tb] === 1 ? 20 : 12)); if(id > maxId) maxId = id; }
+  if(opts.ext) opts.ext.trackId = maxId + 1;
+
+  function extTrak(t, ti){
+    const tk = full(0, 7, 80), dv = new DataView(tk.buffer);
+    dv.setUint32(12, t.trackId); dv.setUint32(20, movieDurs[ti]); dv.setUint16(36, 1); dv.setUint16(32, 0x0100);
+    [0x00010000,0,0,0,0x00010000,0,0,0,0x40000000].forEach((v,i) => dv.setUint32(40+i*4, v));
+    const md = full(0, 0, 20), mdv = new DataView(md.buffer);
+    mdv.setUint32(12, t.timescale); mdv.setUint32(16, Math.min(mediaDur[ti], 0xFFFFFFFF)); mdv.setUint16(20, 0x55C4);
+    const hd = full(0, 0, 20 + 13); hd.set([115,111,117,110], 8); hd.set(new TextEncoder().encode("SoundHandler"), 24);
+    const smhd = box("smhd", full(0, 0, 4));
+    const url = box("url ", full(0, 1, 0)), drf = full(0, 0, 4); new DataView(drf.buffer).setUint32(4, 1);
+    const dinf = box("dinf", box("dref", drf, url));
+    const minf = box("minf", smhd, dinf, buildStbl(M, t, lists[ti], trackChunks[ti], big));
+    return [box("tkhd", tk), box("mdia", box("mdhd", md), box("hdlr", hd), minf)];
+  }
 
   function makeMoov(use64, baseOff){
-    // Offsets setzen
     let o = baseOff;
     for(const c of allChunks){ c.outOff = o; o += c.bytes; }
     const traks = tracks.map((t, ti) => {
       const list = lists[ti];
-      // tkhd: Dauer setzen
-      const tk = u.slice(t.tkhd.start, t.tkhd.end), tdv = new DataView(tk.buffer), tb = t.tkhd.body - t.tkhd.start;
-      if(tk[tb] === 1) setU64(tdv, tb + 28, movieDurs[ti]); else tdv.setUint32(tb + 20, movieDurs[ti]);
-      // edts
       let mt = 0;
-      if(ti === 0 && list.length) mt = Math.max(0, t.cto[list[0]]);
-      if(ti > 0 && P.length && P[0].aud[ti-1][0] === 0) mt = t.mediaTime;
+      if(t === M.video && list.length) mt = Math.max(0, t.cto[list[0]]);
+      else if(!t.ext && P.length && P[0].aud[M.audios.indexOf(t)] && P[0].aud[M.audios.indexOf(t)][0] === 0) mt = t.mediaTime;
+      else if(t.ext) mt = t.mediaTime || 0;
       const el = full(0, 0, 4 + 12), edv = new DataView(el.buffer);
       edv.setUint32(4, 1); edv.setUint32(8, movieDurs[ti]); edv.setInt32(12, mt); edv.setUint32(16, 0x00010000);
       const edts = box("edts", box("elst", el));
-      // mdhd
+      if(t.ext){ const [tk, mdia] = extTrak(t, ti); return box("trak", tk, edts, mdia); }
+      const tk = u.slice(t.tkhd.start, t.tkhd.end), tdv = new DataView(tk.buffer), tb = t.tkhd.body - t.tkhd.start;
+      if(tk[tb] === 1) setU64(tdv, tb + 28, movieDurs[ti]); else tdv.setUint32(tb + 20, movieDurs[ti]);
       const md = u.slice(t.mdhd.start, t.mdhd.end), mdv = new DataView(md.buffer), mb = t.mdhd.body - t.mdhd.start;
       if(md[mb] === 1) setU64(mdv, mb + 24, mediaDur[ti]); else mdv.setUint32(mb + 16, Math.min(mediaDur[ti], 0xFFFFFFFF));
       const minfKids = t.nk.filter(b => b.type !== "stbl").map(b => u.subarray(b.start, b.end));
       const minf = box("minf", ...minfKids, buildStbl(M, t, list, trackChunks[ti], use64));
       const mdiaKids = t.mk.map(b => b.type === "mdhd" ? md : b.type === "minf" ? minf : u.subarray(b.start, b.end));
-      const mdia = box("mdia", ...mdiaKids);
-      return box("trak", tk, edts, mdia);
+      return box("trak", tk, edts, box("mdia", ...mdiaKids));
     });
     const mv = u.slice(M.mvhd.start, M.mvhd.end), mvdv = new DataView(mv.buffer), mvb = M.mvhd.body - M.mvhd.start;
     if(mv[mvb] === 1) setU64(mvdv, mvb + 24, movieDur); else mvdv.setUint32(mvb + 16, movieDur);
+    if(opts.ext) mvdv.setUint32(mv.length - 4, opts.ext.trackId + 1);
     const others = M.mk.filter(b => b.type !== "mvhd" && b.type !== "trak").map(b => u.subarray(b.start, b.end));
     return box("moov", mv, ...traks, ...others);
   }
@@ -539,10 +611,14 @@ function build(M, segs){
   const parts = [];
   if(ftyp.length) parts.push(ftyp);
   parts.push(moov, mh);
-  // Daten: Samples der Chunks, zusammenhängende Bereiche zusammenfassen
   let run = null;
   for(const c of allChunks){
     const t = tracks[c.ti], list = lists[c.ti];
+    if(t.ext){
+      const buf = new Uint8Array(c.bytes); let o2 = 0;
+      for(let k=c.first;k<c.first+c.n;k++){ const d = t.mem[list[k]]; buf.set(d, o2); o2 += d.length; }
+      parts.push(buf); run = null; continue;
+    }
     for(let k=c.first;k<c.first+c.n;k++){
       const s = list[k], so = t.off[s], sz = t.sizes[s];
       if(run && run.off + run.len === so) run.len += sz;
@@ -553,7 +629,108 @@ function build(M, segs){
   return { parts, size, length: movieDur / M.movieTs };
 }
 
-return { open, plan, planLength, build, nearestKey };
+/* ---------- Eigene Tonspuren ---------- */
+function descLen(n){ const b = []; for(let i=3;i>=0;i--){ b.push(((n >> (7*i)) & 127) | (i ? 128 : 0)); } return b; }
+function desc(tag, bytes){ return new Uint8Array([tag, ...descLen(bytes.length), ...bytes]); }
+function cat(...a){ let n = 0; for(const x of a) n += x.length; const o = new Uint8Array(n); let p = 0; for(const x of a){ o.set(x, p); p += x.length; } return o; }
+function audioSampleEntry(type, channels, rate, child){
+  const b = new Uint8Array(28), dv = new DataView(b.buffer);
+  dv.setUint16(6, 1); dv.setUint16(16, channels); dv.setUint16(18, 16); dv.setUint32(24, Math.min(rate, 65535) * 65536);
+  return box(type, b, child);
+}
+function esds(oti, bitrate, dsi){
+  const dc = new Uint8Array(13), dv = new DataView(dc.buffer);
+  dc[0] = oti; dc[1] = 0x15; dv.setUint32(5, bitrate); dv.setUint32(9, bitrate);
+  const dcd = desc(4, dsi ? cat(dc, desc(5, dsi)) : dc);
+  const es = desc(3, cat(new Uint8Array([0,0,0]), dcd, desc(6, new Uint8Array([2]))));
+  return box("esds", cat(new Uint8Array(4), es));
+}
+function stsdOf(entry){ const h = full(0, 0, 4); new DataView(h.buffer).setUint32(4, 1); return box("stsd", h, entry); }
+function extTrack(timescale, durs, mems, stsdBox, mediaTime){
+  const n = mems.length;
+  return { ext:true, timescale, n, mem: mems, dur: Uint32Array.from(durs), sizes: Uint32Array.from(mems, m => m.length),
+           cto: new Int32Array(n), sdi: new Uint32Array(n).fill(1), sync: new Uint8Array(n), hasCtts:false, hasStss:false,
+           stsdBytes: stsdBox, mediaTime: mediaTime || 0 };
+}
+
+/* MP3 lesen */
+const BR = { "3-3":[0,32,64,96,128,160,192,224,256,288,320,352,384,416,448], "3-2":[0,32,48,56,64,80,96,112,128,160,192,224,256,320,384],
+  "3-1":[0,32,40,48,56,64,80,96,112,128,160,192,224,256,320], "2-3":[0,32,48,56,64,80,96,112,128,144,160,176,192,224,256],
+  "2-2":[0,8,16,24,32,40,48,56,64,80,96,112,128,144,160] };
+function mp3Header(u, o){
+  if(u[o] !== 0xFF || (u[o+1] & 0xE0) !== 0xE0) return null;
+  const ver = (u[o+1] >> 3) & 3, layer = (u[o+1] >> 1) & 3;
+  if(ver === 1 || layer === 0) return null;
+  const bri = u[o+2] >> 4, sri = (u[o+2] >> 2) & 3, pad = (u[o+2] >> 1) & 1;
+  if(bri === 0 || bri === 15 || sri === 3) return null;
+  const v1 = ver === 3, table = v1 ? BR["3-"+layer] : (layer === 3 ? BR["2-3"] : BR["2-2"]);
+  const br = table[bri] * 1000;
+  let sr = [44100,48000,32000][sri]; if(ver === 2) sr /= 2; if(ver === 0) sr /= 4;
+  let len, spf;
+  if(layer === 3){ len = (Math.floor(12*br/sr) + pad) * 4; spf = 384; }
+  else if(layer === 2){ len = Math.floor(144*br/sr) + pad; spf = 1152; }
+  else { len = Math.floor((v1 ? 144 : 72)*br/sr) + pad; spf = v1 ? 1152 : 576; }
+  if(len < 21) return null;
+  return { ver, layer, sr, br, len, spf, ch: (u[o+3] >> 6) === 3 ? 1 : 2 };
+}
+function parseMp3(u){
+  let off = 0, end = u.length;
+  if(u[0] === 0x49 && u[1] === 0x44 && u[2] === 0x33){ off = (((u[6]&127)<<21) | ((u[7]&127)<<14) | ((u[8]&127)<<7) | (u[9]&127)) + 10 + (u[5] & 0x10 ? 10 : 0); }
+  if(end >= 128 && u[end-128] === 0x54 && u[end-127] === 0x41 && u[end-126] === 0x47) end -= 128;
+  let first = null;
+  while(off + 4 < end){
+    const h = mp3Header(u, off);
+    if(h && off + h.len + 4 <= end){ const h2 = mp3Header(u, off + h.len); if(h2 && h2.ver === h.ver && h2.layer === h.layer && h2.sr === h.sr){ first = h; break; } }
+    off++;
+  }
+  if(!first) return null;
+  const frames = []; let brSum = 0;
+  while(off + 4 <= end){
+    const h = mp3Header(u, off);
+    if(!h || h.ver !== first.ver || h.layer !== first.layer || h.sr !== first.sr){ off++; continue; }
+    if(off + h.len > end) break;
+    frames.push(u.subarray(off, off + h.len)); brSum += h.br; off += h.len;
+  }
+  if(frames.length < 2) return null;
+  const f0 = frames[0]; let skip = 0;
+  for(let i=0;i<Math.min(f0.length - 4, 200);i++){ const s = String.fromCharCode(f0[i],f0[i+1],f0[i+2],f0[i+3]); if(s === "Xing" || s === "Info" || s === "VBRI"){ skip = 1; break; } }
+  const fr = frames.slice(skip);
+  return { frames: fr, sr: first.sr, spf: first.spf, ch: first.ch, ver: first.ver, kbps: Math.round(brSum / frames.length / 1000), duration: fr.length * first.spf / first.sr };
+}
+/* MP3 als Tonspur: Start bei 'offset' Sekunden, gekürzt auf 'length' Sekunden – ohne Neu-Kodierung */
+function mp3Track(mp3, offset, length){
+  const f0 = mp3.frames[0];
+  // stiller Frame: gleicher Kopf, ohne Polsterbyte und CRC, Rest Nullen
+  const h = new Uint8Array([f0[0], f0[1] | 1, f0[2] & 0xFD, f0[3]]);
+  const hh = mp3Header(h, 0) || mp3Header(new Uint8Array([...h, 0,0,0,0]), 0);
+  const silent = new Uint8Array(hh ? hh.len : f0.length); silent.set(h, 0);
+  const mems = [], durs = [];
+  const total = Math.ceil(length * mp3.sr / mp3.spf);
+  const pre = Math.max(0, Math.round(offset * mp3.sr / mp3.spf));
+  const skipF = Math.max(0, Math.round(-offset * mp3.sr / mp3.spf));
+  for(let i=0;i<pre && mems.length < total;i++){ mems.push(silent); durs.push(mp3.spf); }
+  for(let i=skipF;i<mp3.frames.length && mems.length < total;i++){ mems.push(mp3.frames[i]); durs.push(mp3.spf); }
+  if(!mems.length){ mems.push(silent); durs.push(mp3.spf); }
+  const oti = mp3.ver === 3 ? 0x6B : 0x69;
+  const entry = audioSampleEntry("mp4a", mp3.ch, mp3.sr, esds(oti, mp3.kbps * 1000, null));
+  return extTrack(mp3.sr, durs, mems, stsdOf(entry));
+}
+/* AAC-Pakete (aus dem Encoder) als Tonspur */
+function aacTrack(packets, sampleRate, channels, asc, bitrate){
+  if(!asc){ const fi = [96000,88200,64000,48000,44100,32000,24000,22050,16000,12000,11025,8000].indexOf(sampleRate);
+    asc = new Uint8Array([(2 << 3) | (fi >> 1), ((fi & 1) << 7) | (channels << 3)]); }
+  const entry = audioSampleEntry("mp4a", channels, sampleRate, esds(0x40, bitrate, asc));
+  return extTrack(sampleRate, packets.map(() => 1024), packets, stsdOf(entry));
+}
+/* Opus-Pakete als Tonspur (Ersatz, wenn der Browser kein AAC kann) */
+function opusTrack(packets, durs, channels, preSkip){
+  const d = new Uint8Array(11), dv = new DataView(d.buffer);
+  d[0] = 0; d[1] = channels; dv.setUint16(2, preSkip); dv.setUint32(4, 48000); dv.setInt16(8, 0); d[10] = 0;
+  const entry = audioSampleEntry("Opus", channels, 48000, box("dOps", d));
+  return extTrack(48000, durs, packets, stsdOf(entry), preSkip);
+}
+
+return { open, plan, planLength, build, nearestKey, parseMp3, mp3Track, aacTrack, opusTrack };
 })();
 if(typeof module !== "undefined") module.exports = VCut;
 
@@ -783,8 +960,8 @@ function setVal(k, t){
   const kt = S.M.keyTimes, first = kt[0] || 0, last = kt[kt.length-1] || 0;
   if(k === "trimS"){ t = snap(Math.min(t, S.trimE - 0.1)); if(t >= S.trimE) t = snap(t - 1); S.trimS = Math.max(first, t); }
   if(k === "trimE") S.trimE = Math.max(t, S.trimS + 0.1);
-  if(k === "loopA"){ let v = snap(t); if(v >= S.loopB){ const c = kt.filter(x => x < S.loopB); v = c.length ? c[c.length-1] : first; } S.loopA = v; }
-  if(k === "loopB"){ let v = (t >= S.dur - 0.05) ? S.dur : snap(t); if(v <= S.loopA){ const c = kt.find(x => x > S.loopA); v = c !== undefined ? c : S.dur; } S.loopB = v; }
+  if(k === "loopA"){ let v = snap(t); if(v >= S.loopB) v = kt[Math.max(0, kt.indexOf(S.loopB) - 1)]; S.loopA = v; }
+  if(k === "loopB"){ let v = snap(t); if(v <= S.loopA) v = kt[Math.min(kt.length-1, kt.indexOf(S.loopA) + 1)]; if(v <= S.loopA) v = S.dur; S.loopB = v; }
   S.trimE = Math.min(S.dur, S.trimE);
   changed();
 }
@@ -827,7 +1004,7 @@ $("calcTarget").onclick = () => {
 };
 
 /* ---------- Aktualisieren ---------- */
-function clearRes(){ resCache = null; if(S.resUrl){ URL.revokeObjectURL(S.resUrl); S.resUrl = null; } }
+function clearRes(){ gen++; resCache = null; resPromise = null; if(S.resUrl){ URL.revokeObjectURL(S.resUrl); S.resUrl = null; } }
 function changed(){
   if(S.mode === "res") showOriginal();
   clearRes();
@@ -855,19 +1032,184 @@ function changed(){
   $("playSeam").disabled = !(S.M && segs.length > 1);
   $("exportBtn").disabled = !(S.M && L > 0.05);
   $("playRes").disabled = !(S.M && L > 0.05);
+  voiceUi(S.M ? L : 0);
   draw();
+}
+
+/* ---------- Stimme ---------- */
+const VO = { file:null, bytes:null, mp3:null, dur:0, mode:"replace", off:0, orig:60, vol:100, duck:true, duckLvl:30 };
+const canEncode = typeof window.AudioEncoder === "function" && typeof window.AudioData === "function";
+const vdrop = $("vdrop"), vIn = $("vIn");
+vdrop.onclick = () => vIn.click();
+vIn.onchange = () => { if(vIn.files[0]) loadVoice(vIn.files[0]); vIn.value = ""; };
+["dragenter","dragover"].forEach(e => vdrop.addEventListener(e, ev => { ev.preventDefault(); vdrop.classList.add("over"); }));
+["dragleave","drop"].forEach(e => vdrop.addEventListener(e, ev => { ev.preventDefault(); vdrop.classList.remove("over"); }));
+vdrop.addEventListener("drop", ev => { const f = ev.dataTransfer.files[0]; if(f) loadVoice(f); });
+async function loadVoice(file){
+  msg("vMsg","ok","⏳ Stimme wird gelesen …");
+  try{
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const mp3 = VCut.parseMp3(bytes);
+    const oc = new OfflineAudioContext(1, 1, 48000);
+    const buf = await oc.decodeAudioData(bytes.slice(0).buffer);
+    Object.assign(VO, { file, bytes, mp3, dur: mp3 ? mp3.duration : buf.duration });
+    $("vName").textContent = file.name; $("vName").title = file.name;
+    $("vDur").textContent = fmt(VO.dur);
+    $("vRemove").disabled = false;
+    let t = "✅ <b>" + escapeHtml(file.name) + "</b> geladen.";
+    if(!mp3 && !canEncode) t = "⚠️ Das ist keine MP3-Datei – dafür muss der Ton neu erstellt werden, und das kann dieser Browser nicht. Bitte eine MP3 nehmen oder Chrome/Edge/Safari benutzen.";
+    msg("vMsg", !mp3 && !canEncode ? "warn" : "ok", t);
+  }catch(e){
+    console.error(e);
+    msg("vMsg","err","❌ Diese Tondatei konnte nicht gelesen werden. Bitte eine MP3-Datei probieren.");
+    return;
+  }
+  changed();
+}
+$("vRemove").onclick = () => { Object.assign(VO, { file:null, bytes:null, mp3:null, dur:0 }); $("vName").textContent = "–"; $("vDur").textContent = "–"; $("vRemove").disabled = true; hideMsg("vMsg"); changed(); };
+document.querySelectorAll("#vMode button").forEach(b => b.onclick = () => { VO.mode = b.dataset.m; changed(); });
+document.querySelectorAll(".nudge[data-v]").forEach(b => b.onclick = () => { VO.off = Math.max(0, Math.round((VO.off + Number(b.dataset.v))*10)/10); changed(); });
+{ const el = $("vOff");
+  const apply = () => { const t = parseTime(el.value); if(isFinite(t)) VO.off = Math.max(0, t); el.value = fmt(VO.off); changed(); };
+  el.addEventListener("change", apply); el.addEventListener("keydown", e => { if(e.key === "Enter"){ apply(); el.blur(); } }); }
+[["vOrig","orig"],["vVol","vol"],["vDuckLvl","duckLvl"]].forEach(([id,k]) => $(id).addEventListener("input", e => { VO[k] = Number(e.target.value); changed(); }));
+$("vDuck").onchange = e => { VO.duck = e.target.checked; changed(); };
+function voiceUi(L){
+  document.querySelectorAll("#vMode button").forEach(b => { b.classList.toggle("on", b.dataset.m === VO.mode); });
+  $("vMode").querySelector('[data-m="mix"]').disabled = !canEncode;
+  $("vMix").classList.toggle("disabled", VO.mode !== "mix");
+  $("vDuckLvl").disabled = !VO.duck;
+  $("vOrigTxt").textContent = VO.orig + " %"; $("vVolTxt").textContent = VO.vol + " %"; $("vDuckTxt").textContent = VO.duckLvl + " %";
+  if(document.activeElement !== $("vOff")) $("vOff").value = fmt(VO.off);
+  let h;
+  if(VO.mode === "mix") h = "Originalton und Stimme werden gemischt. Dafür wird nur der <b>Ton</b> neu erstellt – das Bild bleibt 1:1.";
+  else if(VO.file && !VO.mp3) h = "Der Originalton wird durch deine Aufnahme ersetzt. Weil sie keine MP3 ist, wird der Ton neu erstellt.";
+  else h = "Der Originalton wird entfernt, deine MP3 kommt <b>1:1 ohne Neu-Kodierung</b> hinein. „Stimme ab“ = ab welcher Sekunde im fertigen Video sie beginnt.";
+  if(!canEncode) h += "<br>Mischen geht in diesem Browser nicht – dafür Chrome, Edge oder Safari benutzen.";
+  $("vModeHint").innerHTML = h;
+  const vb = $("vbar");
+  if(VO.file && L > 0){
+    vb.style.display = "block";
+    const a = clamp(VO.off / L, 0, 1), w = clamp((VO.off + VO.dur) / L, 0, 1) - a;
+    $("vbarI").style.left = (a*100) + "%"; $("vbarI").style.width = (w*100) + "%";
+    vb.title = "Stimme: " + fmt(VO.off) + " – " + fmt(Math.min(L, VO.off + VO.dur));
+  } else vb.style.display = "none";
+}
+
+/* ---------- Ton mischen und neu erstellen ---------- */
+async function mixAudio(segs, L, prog){
+  const rate = 48000, n = Math.max(1, Math.ceil(L * rate));
+  const ctx = new OfflineAudioContext(2, n, rate);
+  const orig = VO.mode === "mix" ? VO.orig / 100 : 0;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -2; comp.knee.value = 0; comp.ratio.value = 20; comp.attack.value = 0.002; comp.release.value = 0.2;
+  comp.connect(ctx.destination);
+  const voiceBuf = await ctx.decodeAudioData(VO.bytes.slice(0).buffer);
+  if(orig > 0 && S.M.audios.length){
+    prog("Originalton wird gelesen");
+    const r = VCut.build(S.M, segs, { audioOnly:true });
+    const blob = new Blob(r.parts.map(p => p.length !== undefined ? p : S.file.slice(p.off, p.off + p.len)));
+    const ob = await ctx.decodeAudioData(await blob.arrayBuffer());
+    const src = ctx.createBufferSource(); src.buffer = ob;
+    const g = ctx.createGain(); g.gain.setValueAtTime(orig, 0);
+    if(VO.duck){
+      // Wann wird gesprochen? (Lautstärke der Stimme in 50-ms-Schritten)
+      const win = Math.round(voiceBuf.sampleRate * 0.05), nw = Math.ceil(voiceBuf.length / win), rms = new Float32Array(nw);
+      const c0 = voiceBuf.getChannelData(0), c1 = voiceBuf.numberOfChannels > 1 ? voiceBuf.getChannelData(1) : c0;
+      let mx = 0;
+      for(let w=0; w<nw; w++){ let q = 0; const a = w*win, b = Math.min(voiceBuf.length, a + win); for(let i=a;i<b;i+=2){ const v = (c0[i] + c1[i]) / 2; q += v*v; } rms[w] = Math.sqrt(q / Math.max(1, (b-a)/2)); if(rms[w] > mx) mx = rms[w]; }
+      const thr = Math.max(0.004, mx * 0.1), hold = 7;
+      let active = false, last = -99, low = orig * VO.duckLvl / 100;
+      for(let w=0; w<nw + hold + 2; w++){
+        if(w < nw && rms[w] > thr) last = w;
+        const now = w - last <= hold;
+        const t = VO.off + w * 0.05;
+        if(now !== active && t >= 0 && t < L){ g.gain.setTargetAtTime(now ? low : orig, t, now ? 0.06 : 0.25); active = now; }
+      }
+    }
+    src.connect(g); g.connect(comp); src.start(0);
+  }
+  const vs = ctx.createBufferSource(); vs.buffer = voiceBuf;
+  const vg = ctx.createGain(); vg.gain.value = VO.vol / 100;
+  vs.connect(vg); vg.connect(comp); vs.start(Math.max(0, VO.off));
+  prog("Ton wird gemischt");
+  const out = await ctx.startRendering();
+  prog("Ton wird erstellt");
+  return encodeAudio(out, prog);
+}
+async function encodeAudio(buf, prog){
+  const ch = 2, rate = buf.sampleRate;
+  const cands = [{ codec:"mp4a.40.2", sampleRate:rate, numberOfChannels:ch, bitrate:192000 }, { codec:"opus", sampleRate:48000, numberOfChannels:ch, bitrate:160000 }];
+  let cfg = null;
+  for(const c of cands){ try{ if((await AudioEncoder.isConfigSupported(c)).supported){ cfg = c; break; } }catch(e){} }
+  if(!cfg) throw new Error("kein Encoder");
+  const packets = [], durs = []; let desc = null, err = null;
+  const enc = new AudioEncoder({
+    output: (chunk, meta) => {
+      const u = new Uint8Array(chunk.byteLength); chunk.copyTo(u); packets.push(u); durs.push(chunk.duration || 0);
+      const d = meta && meta.decoderConfig && meta.decoderConfig.description;
+      if(d && !desc) desc = d instanceof ArrayBuffer ? new Uint8Array(d.slice(0)) : new Uint8Array(d.buffer, d.byteOffset, d.byteLength).slice();
+    },
+    error: e => { err = e; }
+  });
+  enc.configure(cfg);
+  const c0 = buf.getChannelData(0), c1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : c0;
+  const step = 4800;
+  for(let i=0;i<buf.length;i+=step){
+    const f = Math.min(step, buf.length - i), data = new Float32Array(f * 2);
+    data.set(c0.subarray(i, i+f), 0); data.set(c1.subarray(i, i+f), f);
+    const ad = new AudioData({ format:"f32-planar", sampleRate:rate, numberOfFrames:f, numberOfChannels:2, timestamp: Math.round(i / rate * 1e6), data });
+    enc.encode(ad); ad.close();
+    if(enc.encodeQueueSize > 40) await new Promise(r => setTimeout(r, 5));
+    if(err) throw err;
+  }
+  await enc.flush(); enc.close();
+  if(err) throw err;
+  if(cfg.codec === "opus"){
+    let pre = 312;
+    if(desc && desc.length >= 12 && String.fromCharCode(...desc.subarray(0,8)) === "OpusHead") pre = desc[10] | (desc[11] << 8);
+    const t = VCut.opusTrack(packets, durs.map(d => Math.max(1, Math.round(d * 48000 / 1e6))), 2, pre);
+    t.opus = true; return t;
+  }
+  return VCut.aacTrack(packets, rate, 2, desc && desc.length >= 2 ? desc : null, 192000);
 }
 
 /* ---------- Ergebnis bauen ---------- */
 const MIME = { mov:"video/quicktime", m4v:"video/x-m4v", "3gp":"video/3gpp" };
+let gen = 0, resPromise = null;
 function result(){
-  if(resCache) return resCache;
-  const segs = segments(), r = VCut.build(S.M, segs);
-  const parts = r.parts.map(p => p.length !== undefined ? p : S.file.slice(p.off, p.off + p.len));
-  const blob = new Blob(parts, { type: MIME[S.ext] || "video/mp4" });
-  const seam = segs.length > 1 ? VCut.planLength(S.M, [segs[0]]) : 0;
-  resCache = { blob, length: r.length, seam };
-  return resCache;
+  if(resCache) return Promise.resolve(resCache);
+  if(resPromise) return resPromise;
+  const my = gen;
+  const prog = t => { if(my === gen) msg("expMsg","ok","⏳ " + t + " …"); };
+  resPromise = (async () => {
+    const segs = segments(), L = VCut.planLength(S.M, segs);
+    let ext = null, outExt = S.ext, note = "";
+    if(VO.file){
+      if(VO.mode === "replace" && VO.mp3) ext = VCut.mp3Track(VO.mp3, VO.off, L);
+      else {
+        if(!canEncode) throw new Error("Mischen nicht möglich");
+        ext = await mixAudio(segs, L, prog);
+        if(ext.opus){ if(S.ext === "mov") outExt = "mp4"; note = "Dein Browser kann kein AAC erstellen – der Ton ist deshalb im Format Opus (YouTube nimmt das problemlos)."; }
+      }
+    }
+    const r = VCut.build(S.M, segs, ext ? { ext } : {});
+    const parts = r.parts.map(p => p.length !== undefined ? p : S.file.slice(p.off, p.off + p.len));
+    const blob = new Blob(parts, { type: MIME[outExt] || "video/mp4" });
+    const seam = segs.length > 1 ? VCut.planLength(S.M, [segs[0]]) : 0;
+    const res = { blob, length: r.length, seam, ext: outExt, note };
+    if(my === gen){ resCache = res; if(ext) hideMsg("expMsg"); }
+    return res;
+  })();
+  resPromise.finally(() => { if(my === gen) resPromise = null; }).catch(() => {});
+  return resPromise;
+}
+function failMsg(e){
+  console.error(e);
+  const m = String(e && e.message);
+  msg("expMsg","err", m === "kein Encoder" || m === "Mischen nicht möglich"
+    ? "❌ Dieser Browser kann den Ton nicht neu erstellen. Bitte Chrome, Edge oder Safari benutzen – oder bei „Stimme ersetzt Ton“ eine MP3 nehmen."
+    : "❌ Das Ergebnis konnte nicht erstellt werden (" + escapeHtml(m) + ").");
 }
 
 /* ---------- Abspielen ---------- */
@@ -880,8 +1222,9 @@ function setBadge(){
 function showOriginal(){
   S.mode = "orig"; vid.pause(); vid.src = S.url; vid.currentTime = S.pos; setBadge(); $("resBar").style.width = "0"; draw();
 }
-function showResult(at){
-  const r = result();
+async function showResult(at){
+  let r;
+  try{ r = await result(); }catch(e){ failMsg(e); return; }
   if(!S.resUrl) S.resUrl = URL.createObjectURL(r.blob);
   S.mode = "res"; vid.pause(); vid.src = S.resUrl; setBadge(); draw();
   vid.onloadedmetadata = () => { vid.onloadedmetadata = null; vid.currentTime = at || 0; vid.play().catch(()=>{}); };
@@ -906,7 +1249,7 @@ function tick(){
 }
 (function loop(){ if(!vid.paused) tick(); requestAnimationFrame(loop); })();
 $("playRes").onclick = () => { if(S.mode === "res") showOriginal(); else showResult(0); };
-$("playSeam").onclick = () => showResult(Math.max(0, result().seam - 3));
+$("playSeam").onclick = async () => { let r; try{ r = await result(); }catch(e){ failMsg(e); return; } showResult(Math.max(0, r.seam - 3)); };
 document.addEventListener("keydown", e => {
   if(e.code === "Space" && S.M && !/INPUT/.test(document.activeElement.tagName)){ e.preventDefault(); $("playBtn").click(); }
 });
@@ -940,14 +1283,15 @@ if(window.claude && typeof window.claude.use === "function"){
 }
 $("exportBtn").onclick = async () => {
   vid.pause();
-  const r = result();
+  let r;
+  try{ r = await result(); }catch(e){ failMsg(e); return; }
   const base = S.name.replace(/\.[^.]+$/, "");
-  const name = base + "_" + fmt(r.length).replace(/:/g, "-").replace(/\.\d$/, "") + "." + S.ext;
-  const info = "<b>" + escapeHtml(name) + "</b> · " + fmtSize(r.blob.size);
+  const name = base + "_" + fmt(r.length).replace(/:/g, "-").replace(/\.\d$/, "") + "." + r.ext;
+  const info = "<b>" + escapeHtml(name) + "</b> · " + fmtSize(r.blob.size) + (r.note ? "<br>" + r.note : "");
   if(dlCap){
     try{
       await dlCap.save({ filename: name, data: r.blob });
-      msg("expMsg","ok","✅ Gespeichert: " + info + " – gleiches Format wie das Original.");
+      msg("expMsg","ok","✅ Gespeichert: " + info);
       return;
     }catch(e){
       if(e && e.code === "declined"){ msg("expMsg","warn","Speichern abgebrochen."); return; }
@@ -969,7 +1313,7 @@ $("exportBtn").onclick = async () => {
     const a = document.createElement("a"); a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 120000);
-    msg("expMsg","ok","✅ Exportiert: " + info + " – gleiches Format wie das Original.");
+    msg("expMsg","ok","✅ Exportiert: " + info);
   }catch(e){
     msg("expMsg","err","❌ Export hat nicht geklappt.");
   }
